@@ -9,12 +9,12 @@ from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Signature import PKCS1_v1_5 
 from Crypto.Hash import SHA256 
 
-f = open('VF_PubKey.der', 'rb') 
+f = open('serv_pub.der', 'rb') 
 public_key = RSA.importKey(f.read())
 print(public_key)
 f.close
 
-f = open('VF_PrivKey1.der', 'rb') 
+f = open('cli_priv.der', 'rb') 
 private_key_dsign = RSA.importKey(f.read())
 print(private_key_dsign)
 f.close
@@ -33,22 +33,26 @@ try:
     # Send data
     voterName = input("Enter VoterName: ")
     regNum = input("Enter RegNum: ")
-    message = voterName
-    my_message_asBytes =str.encode(message)
-    type(my_message_asBytes)
+    message = voterName + regNum
+    
+    Voting_details =str.encode(message)
+    type(Voting_details)
     #message = b'This is the message.  It will be repeated.'
     encryptor = PKCS1_OAEP.new(public_key)
-    encrypted = encryptor.encrypt(my_message_asBytes)
-    print("length of string: ", len(encrypted))
+    encrypted = encryptor.encrypt(Voting_details)
+    #print("length of string: ", len(encrypted))
+    
+    
+    
     
     
     #Digital Signature
-    h = SHA256.new(my_message_asBytes)
+    h = SHA256.new(Voting_details)
     #priv_key = RSA.importKey(private_key_dsign)
     signer = PKCS1_v1_5.new(private_key_dsign)
     signature = signer.sign(h)
-    #print("the signature: ")
     #print(signature)
+    #print(Voting_details)
     encryp_sign = encrypted + signature
     
     
@@ -62,10 +66,17 @@ try:
 
     while amount_received < amount_expected:
         data = sock.recv(16)
+        if(data == 1):
+            {
+                }
+        
         amount_received += len(data)
         print('received {!r}'.format(data))
 
 finally:
     print('closing socket')
     sock.close()
+
+def printMenu():
+    print("Welcome")
 

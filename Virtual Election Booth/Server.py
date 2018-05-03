@@ -8,6 +8,7 @@ from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Signature import PKCS1_v1_5 
 from Crypto.Hash import SHA256 
 import ast
+import re
 
 
 def main():
@@ -46,9 +47,9 @@ def start_server():
     soc.close()
 
 def read_theFile():
-    fr = open('VF_PrivKey.der', 'rb') 
+    fr = open('serv_priv.der', 'rb') 
     private_key = RSA.importKey(fr.read())
-    print(private_key)
+    #print(private_key)
     return private_key
 
 def client_thread(connection, ip, port, max_buffer_size = 10000):
@@ -71,19 +72,33 @@ def receive_input(connection, max_buffer_size):
     
     data_recieved = connection.recv(max_buffer_size)
     client_input = data_recieved[0:128]
-    digi_Sign = data_recieved[129:]
-    print(digi_Sign)
+    digi_Sign = data_recieved[128:]
+    #print(digi_Sign)
     #verifySig(digi_Sign)
     decryptor = PKCS1_OAEP.new(read_theFile())
-    decrypted = decryptor.decrypt(ast.literal_eval(str(client_input)))
-    decryptor_asStr = decrypted.decode()
-    type(decryptor_asStr)
-    print(decryptor_asStr)
+    decrypted = decryptor.decrypt(client_input)
+    decryptor_vinfo = decrypted.decode()
+    #type(decryptor_asStr)
+    #print(decryptor_asStr)
+    verifySig(decryptor_vinfo, digi_Sign)  
+    vinfo_split = []
+    vinfo_split = mysplit(decryptor_vinfo)
+    vname_split = vinfo_split[0]
+    vreg_split = vinfo_split[1]
+    #print(vname_split)
+    #print(vreg_split)
+    
+    if(VnameExist(vname_split) and RegExist(vreg_split)): 
+        print("VnameExist")
+        connection.sendall("1".encode(encoding='utf_8', errors='strict'))
+    else:
+        print("VnameDoesntExist")
+        connection.sendall("0".encode(encoding='utf_8', errors='strict'))
         
     client_input_size = sys.getsizeof(client_input)
     if client_input_size > max_buffer_size:
             print("The input size is greater than expected {}".format(client_input_size))
-    result = process_input(client_input)
+    result = process_input(decryptor_vinfo)
     
     return result
 
@@ -97,18 +112,48 @@ def openFile(filename):
     f = open(filename, 'rb') 
     key = RSA.importKey(f.read())
     #print(key)
-    f.close
+    #f.close
     return key
 
-def verifySig(data):
-        digest = SHA256.new(data)
-        signer = PKCS1_v1_5.new('VF_PrivKey1')
-        sig = signer.sign(digest)
-        verifier = PKCS1_v1_5.new(openFile('VF_PubKey.der'))
-        verified = verifier.verify(digest, sig) 
-        assert verified, 'Signature verification failed'
-        print ('Successfully verified message')       
-        return True
+def VnameExist(vname):
+    fr = open('VotingList', 'r')
+    lines=fr.readlines()
+    result=[]
+    for x in lines:
+        result.append(x.split(' ')[0])
+        if result==vname:
+            return 1;    
+    fr.close()
+
+def mysplit(decryptedText):
+    head = decryptedText.rstrip('0123456789')
+    tail = decryptedText[len(head):]
+    return head, tail
+
+
+def RegExist(vname):
+    fr = open('VotingList', 'r')
+    lines=fr.readlines()
+    result=[]
+    for x in lines:
+        result.append(x.split(' ')[1])
+        if result==vname:
+            return 1;    
+    fr.close()    
+    
+
+def verifySig(data, signedData):
+        my_data_asBytes =str.encode(data)
+        print(my_data_asBytes)
+        digest = SHA256.new()
+        digest.update(my_data_asBytes)
+        verifier = PKCS1_v1_5.new(openFile('cli_pub.der'))
+        if (verifier.verify(digest, signedData)):
+            print("Verified")
+        else:
+            print("not verified")
+                   
+        #return True
 
 if __name__ == "__main__":
     main()

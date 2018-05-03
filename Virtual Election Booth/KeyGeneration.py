@@ -17,5 +17,5 @@ class KeyGeneration:
     #def Encryption(self):   
             #self.R.encryptMessage(publickey, plainText)
             
-#testinstance = KeyGeneration()
-#testinstance.generate()
+testinstance = KeyGeneration()
+testinstance.generate()
