@@ -9,6 +9,7 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256 
 import ast
 import re
+from time import gmtime, strftime
 
 
 def main():
@@ -73,13 +74,9 @@ def receive_input(connection, max_buffer_size):
     data_recieved = connection.recv(max_buffer_size)
     client_input = data_recieved[0:128]
     digi_Sign = data_recieved[128:]
-    #print(digi_Sign)
-    #verifySig(digi_Sign)
     decryptor = PKCS1_OAEP.new(read_theFile())
     decrypted = decryptor.decrypt(client_input)
     decryptor_vinfo = decrypted.decode()
-    #type(decryptor_asStr)
-    #print(decryptor_asStr)
     verifySig(decryptor_vinfo, digi_Sign)  
     vinfo_split = []
     vinfo_split = mysplit(decryptor_vinfo)
@@ -87,13 +84,49 @@ def receive_input(connection, max_buffer_size):
     vreg_split = vinfo_split[1]
     #print(vname_split)
     #print(vreg_split)
+    tim_votes = 0;
+    linda_votes = 0;
+    RegExist(vreg_split)
     
-    if(VnameExist(vname_split) and RegExist(vreg_split)): 
+    if VnameExist(vname_split)>=0 and RegExist(vreg_split)>=0: 
         print("VnameExist")
         connection.sendall("1".encode(encoding='utf_8', errors='strict'))
+        while True:
+            voter_choiceRecv = connection.recv(max_buffer_size)
+            if(voter_choiceRecv == b'1' or voter_choiceRecv==b'2' or voter_choiceRecv==b'3'):
+                if(voter_choiceRecv==b'1'):
+                    if(RegExist_inHistory(vreg_split))>=0:
+                        connection.sendall("0".encode(encoding='utf_8', errors='strict'))
+                    else:
+                        connection.sendall("1".encode(encoding='utf_8', errors='strict'))
+                        voting_recieved = connection.recv(max_buffer_size)
+                        decryptor = PKCS1_OAEP.new(read_theFile())
+                        decrypted = decryptor.decrypt(voting_recieved)
+                        dec_votrecv = decrypted.decode()
+                        print(dec_votrecv)
+                        if(dec_votrecv == "1"):
+                            with open("Result") as f:
+                                lines = f.readlines()
+                            tim_votes += 1
+                            lines[0] = "Tim\t\t%d\n" % tim_votes
+                            with open("Result", "w") as f:
+                                f.writelines(lines)
+                            update_History(vreg_split)
+                            
+                        if(dec_votrecv == "2"):
+                            with open("Result") as f:
+                                lines = f.readlines()
+                            tim_votes += 1
+                            lines[0] = "Linda\t\t%d\n" % linda_votes
+                            with open("Result", "w") as f:
+                                f.writelines(lines)
+                            update_History(vreg_split)
+                    
     else:
         print("VnameDoesntExist")
         connection.sendall("0".encode(encoding='utf_8', errors='strict'))
+   
+   
         
     client_input_size = sys.getsizeof(client_input)
     if client_input_size > max_buffer_size:
@@ -108,6 +141,16 @@ def process_input(input_str):
 
     return "Hello " + str(input_str).upper()
 
+def update_History(regNum):
+    with open("HistoryFile", "a") as myfile:
+        myfile.write("\n")
+        myfile.write(str((regNum)+(strftime("\t%Y-%m-%d %H:%M:%S", gmtime()))))
+    #f= open('HistoryFile', 'w')
+    #f.write(str((regNum)+(strftime("\t%Y-%m-%d %H:%M:%S", gmtime()))))
+    print("Hi")
+    myfile.close()
+    
+
 def openFile(filename):
     f = open(filename, 'rb') 
     key = RSA.importKey(f.read())
@@ -120,9 +163,12 @@ def VnameExist(vname):
     lines=fr.readlines()
     result=[]
     for x in lines:
-        result.append(x.split(' ')[0])
-        if result==vname:
-            return 1;    
+        result.append(x.split()[0])
+    for xd, x in enumerate(result):
+        if x==vname:
+            return 1;   
+    return -1 
+    print("VnameExist = {}" .format(result))
     fr.close()
 
 def mysplit(decryptedText):
@@ -131,14 +177,30 @@ def mysplit(decryptedText):
     return head, tail
 
 
-def RegExist(vname):
+def RegExist(vreg):
     fr = open('VotingList', 'r')
     lines=fr.readlines()
     result=[]
     for x in lines:
-        result.append(x.split(' ')[1])
-        if result==vname:
-            return 1;    
+        result.append(x.split()[1])
+    for xd, x in enumerate(result):
+        if x==vreg:
+            return 1; 
+    return -1
+    print("RegNum = {}"  .format(result))
+    fr.close() 
+
+def RegExist_inHistory(vreg):
+    fr = open('HistoryFile', 'r')
+    lines=fr.readlines()
+    result=[]
+    for x in lines:
+        result.append(x.split()[0])
+    for xd, x in enumerate(result):
+        if x==vreg:
+            return 1; 
+    return -1
+    print("RegNum = {}"  .format(result))
     fr.close()    
     
 
