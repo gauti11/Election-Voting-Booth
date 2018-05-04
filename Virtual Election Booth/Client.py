@@ -49,24 +49,25 @@ sock.connect(server_address)
 try:
 
     # Send data
-    voterName = input("Enter VoterName: ")
-    regNum = input("Enter RegNum: ")
-    message = voterName + regNum
-    
+    while True:
+        voterName = input("Enter VoterName: ")
+        regNum = input("Enter RegNum: ")
+        message = voterName + regNum
+        try:
+            int(regNum)
+            break 
+        except ValueError:
+            print ("Enter numbers only in RegFile")
+        
     Voting_details =str.encode(message)
     type(Voting_details)
-    #message = b'This is the message.  It will be repeated.'
     encryptor = PKCS1_OAEP.new(public_key)
     encrypted = encryptor.encrypt(Voting_details)
-    #print("length of string: ", len(encrypted))
 
     #Digital Signature
     h = SHA256.new(Voting_details)
-    #priv_key = RSA.importKey(private_key_dsign)
     signer = PKCS1_v1_5.new(private_key_dsign)
     signature = signer.sign(h)
-    #print(signature)
-    #print(Voting_details)
     encryp_sign = encrypted + signature
     
     

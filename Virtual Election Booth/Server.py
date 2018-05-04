@@ -11,6 +11,7 @@ import ast
 import re
 from time import gmtime, strftime
 import os
+global is_active
 tim_votes =0;
 linda_votes =0;
 with open('VotingList') as f:
@@ -28,8 +29,9 @@ def start_server():
     host = 'localhost'
     port = 2244         # arbitrary non-privileged port
     
-    #sys.argv[0] = input('Enter command line arguments: ').split()
-    #sys.argv[1] = input('Enter command line arguments: ').split()
+    #sys.argv[0] = input('Enter host: ')
+    #sys.argv[1] = input('Enter port: ')
+    
     
     soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   # SO_REUSEADDR flag tells the kernel to reuse a local socket in TIME_WAIT state, without waiting for its natural timeout to expire
@@ -66,19 +68,8 @@ def read_theFile():
     return private_key
 
 def client_thread(connection, ip, port, max_buffer_size = 10000):
-    is_active = True
 
-    while is_active:
         client_input = receive_input(connection, max_buffer_size)
-
-        if "--QUIT--" in client_input:
-            print("Client is requesting to quit")
-            connection.close()
-            print("Connection " + ip + ":" + port + " closed")
-            is_active = False
-        else:
-            print("Processed result: {}".format(client_input))
-            connection.sendall("-".encode("utf8"))
 
 
 def receive_input(connection, max_buffer_size):
@@ -180,17 +171,11 @@ def receive_input(connection, max_buffer_size):
                         
                     
     else:
-        print("VnameDoesntExist")
+        print("VnameorRegDoesntExist")
         connection.sendall("0".encode(encoding='utf_8', errors='strict'))
+        is_active = False
    
-   
-        
-    client_input_size = sys.getsizeof(client_input)
-    if client_input_size > max_buffer_size:
-            print("The input size is greater than expected {}".format(client_input_size))
-    result = process_input(decryptor_vinfo)
-    
-    return result
+
 
 
 def process_input(input_str):
