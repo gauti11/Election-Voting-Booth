@@ -10,6 +10,7 @@ from Crypto.Hash import SHA256
 import ast
 import re
 from time import gmtime, strftime
+import os
 tim_votes =0;
 linda_votes =0;
 with open('VotingList') as f:
@@ -26,6 +27,9 @@ def main():
 def start_server():
     host = 'localhost'
     port = 2244         # arbitrary non-privileged port
+    
+    #sys.argv[0] = input('Enter command line arguments: ').split()
+    #sys.argv[1] = input('Enter command line arguments: ').split()
     
     soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   # SO_REUSEADDR flag tells the kernel to reuse a local socket in TIME_WAIT state, without waiting for its natural timeout to expire
@@ -116,47 +120,62 @@ def receive_input(connection, max_buffer_size):
                             with open("Result") as f:
                                 lines = f.readlines()
                             tim_votes += 1
-                            lines[0] = "Tim\t\t%d\n" % tim_votes
+                            lines[0] = "Tim\t%d\n" % tim_votes
                             with open("Result", "w") as f:
                                 f.writelines(lines)
                             update_History(vreg_split)
+                           
+                            
                             
                         if(dec_votrecv == "2"):
                             with open("Result") as f:
                                 lines = f.readlines()
-                            tim_votes += 1
-                            lines[0] = "Linda\t\t%d\n" % linda_votes
+                            linda_votes += 1
+                            lines[1] = "Linda\t%d\n" % linda_votes
                             with open("Result", "w") as f:
                                 f.writelines(lines)
                             update_History(vreg_split)
+                        with open('HistoryFile') as f:
+                            for i, l in enumerate(f):
+                                pass
+                            i + 1
+                        totalVoted = i+1
+                                    
+                        if(totalVoters==totalVoted):
+                                if(tim_votes>linda_votes):
+                                    print("Tim Wins:%d " % tim_votes)
+                                else:
+                                    print("Linda Wins:%d " % linda_votes)
                             
                 if(voter_choiceRecv==b'2'):
-                    if (RegExist(vreg_split)>=0):
-                        votedInfo = Time_Voted(vreg_split)
-                        print(votedInfo)
-                        connection.sendall(votedInfo.encode(encoding='utf_8', errors='strict'))
+                    if (os.stat('HistoryFile').st_size == 0):
+                        connection.sendall("1".encode(encoding='utf_8', errors='strict'))
                     else:
-                        connection.sendall("0".encode(encoding='utf_8', errors='strict'))
+                        if (RegHistory_Exist(vreg_split)>=0):
+                            votedInfo = Time_Voted(vreg_split)
+                            print(votedInfo)
+                            connection.sendall(votedInfo.encode(encoding='utf_8', errors='strict'))
+                        else:
+                            connection.sendall("0".encode(encoding='utf_8', errors='strict'))
                 
                 if(voter_choiceRecv==b'3'):
-                    with open('HistoryFile') as f:
-                        for i, l in enumerate(f):
-                            pass
-                        i + 1
-                    totalVoted = i+1
-                    print(totalVoted)
-                    print(totalVoters)
-                    print(tim_votes)
-                    print(linda_votes)
-                    if(totalVoters==totalVoted):
-                        if(tim_votes>linda_votes):
-                            str = "Tim Wins:%d " % tim_votes
-                            connection.sendall(str.encode(encoding='utf_8', errors='strict'))
+                    if (os.stat('HistoryFile').st_size == 0):
+                        connection.sendall("1".encode(encoding='utf_8', errors='strict'))
+                    else:    
+                        with open('HistoryFile') as f:
+                            for i, l in enumerate(f):
+                                pass
+                            i + 1
+                        totalVoted = i+1
+                        if(totalVoters==totalVoted):
+                            if(tim_votes>linda_votes):
+                                str = "Tim Wins:%d " % tim_votes
+                                connection.sendall(str.encode(encoding='utf_8', errors='strict'))
+                            else:
+                                str1 = "Linda Wins:%d " % linda_votes
+                                connection.sendall(str1.encode(encoding='utf_8', errors='strict'))
                         else:
-                            str1 = "Linda Wins:%d " % linda_votes
-                            connection.sendall(str1.encode(encoding='utf_8', errors='strict'))
-                    else:
-                        connection.sendall("0".encode(encoding='utf_8', errors='strict'))
+                            connection.sendall("0".encode(encoding='utf_8', errors='strict'))
                             
                         
                     
@@ -180,13 +199,12 @@ def process_input(input_str):
     return "Hello " + str(input_str).upper()
 
 def update_History(regNum):
-    with open("HistoryFile", "a") as myfile:
-        myfile.write("\n")
-        myfile.write(str((regNum)+(strftime("\t%Y-%m-%d %H:%M:%S", gmtime()))))
-    #f= open('HistoryFile', 'w')
-    #f.write(str((regNum)+(strftime("\t%Y-%m-%d %H:%M:%S", gmtime()))))
-    print("Hi")
-    myfile.close()
+    with open('HistoryFile', 'a') as outfile:
+        outfile.write(str((regNum)+(strftime("\t%Y-%m-%d %H:%M:%S", gmtime()))+("\n")))
+    
+    #myfile = open('HistoryFile','a')
+    #myfile.write(str((regNum)+(strftime("\t%Y-%m-%d %H:%M:%S", gmtime()))))
+    outfile.close()
     
 
 def openFile(filename):
@@ -221,6 +239,19 @@ def RegExist(vreg):
     result=[]
     for x in lines:
         result.append(x.split()[1])
+    for xd, x in enumerate(result):
+        if x==vreg:
+            return 1; 
+    return -1
+    print("RegNum = {}"  .format(result))
+    fr.close() 
+    
+def RegHistory_Exist(vreg):
+    fr = open('HistoryFile', 'r')
+    lines=fr.readlines()
+    result=[]
+    for x in lines:
+        result.append(x.split()[0])
     for xd, x in enumerate(result):
         if x==vreg:
             return 1; 

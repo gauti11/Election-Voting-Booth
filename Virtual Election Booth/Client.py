@@ -124,9 +124,10 @@ try:
                     sock.sendall(voter_choice)
                     voting_history = sock.recv(16)
                     voting_history = voting_history.decode("utf8")
-                    print(voting_history)
                     if voting_history == "0":
                         print("No History")
+                    elif voting_history == "1":
+                        print("List Is Empty")
                     else:
                         print("You already Voted {}" .format(voting_history))
                 if(voterChoice=="3"):
@@ -137,12 +138,14 @@ try:
                     election_result = election_result.decode("utf8")
                     if election_result == "0":
                         print("Everyone Hasnt Voted, Please")
+                    elif election_result == "1":
+                        print("Nobody Voted Yet")
                     else:
                         print(election_result)   
                         
-        amount_received += len(data)
-        print('received {!r}'.format(data))
-
+    if(data==b'0'):
+        print("Incorrect Data")
+        sock.close()
 finally:
     print('closing socket')
     sock.close()
