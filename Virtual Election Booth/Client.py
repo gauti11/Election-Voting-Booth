@@ -118,7 +118,27 @@ try:
                         encryptor_candChoice = PKCS1_OAEP.new(public_key)
                         encrypted_candChoice = encryptor_candChoice.encrypt(candid_Choice)
                         sock.sendall(encrypted_candChoice)
-                        test = sock.recv(16)
+                if(voterChoice=="2"):
+                    voter_choice = str.encode(voterChoice)
+                    type(voter_choice)
+                    sock.sendall(voter_choice)
+                    voting_history = sock.recv(16)
+                    voting_history = voting_history.decode("utf8")
+                    print(voting_history)
+                    if voting_history == "0":
+                        print("No History")
+                    else:
+                        print("You already Voted {}" .format(voting_history))
+                if(voterChoice=="3"):
+                    voter_choice = str.encode(voterChoice)
+                    type(voter_choice)
+                    sock.sendall(voter_choice)
+                    election_result = sock.recv(16)
+                    election_result = election_result.decode("utf8")
+                    if election_result == "0":
+                        print("Everyone Hasnt Voted, Please")
+                    else:
+                        print(election_result)   
                         
         amount_received += len(data)
         print('received {!r}'.format(data))

@@ -10,6 +10,13 @@ from Crypto.Hash import SHA256
 import ast
 import re
 from time import gmtime, strftime
+tim_votes =0;
+linda_votes =0;
+with open('VotingList') as f:
+    for i, l in enumerate(f):
+        pass
+    i + 1
+totalVoters = i+1
 
 
 def main():
@@ -23,14 +30,15 @@ def start_server():
     soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   # SO_REUSEADDR flag tells the kernel to reuse a local socket in TIME_WAIT state, without waiting for its natural timeout to expire
     print("Socket created")
-
+    
+     
     try:
         soc.bind((host, port))
     except:
         print("Bind failed. Error : " + str(sys.exc_info()))
         sys.exit()
 
-    soc.listen(5)       # queue up to 5 requests
+    soc.listen(10)       # queue up to 5 requests
     print("Socket now listening")
 
     # infinite loop- do not reset for every requests
@@ -84,8 +92,8 @@ def receive_input(connection, max_buffer_size):
     vreg_split = vinfo_split[1]
     #print(vname_split)
     #print(vreg_split)
-    tim_votes = 0;
-    linda_votes = 0;
+    global tim_votes;
+    global linda_votes;
     RegExist(vreg_split)
     
     if VnameExist(vname_split)>=0 and RegExist(vreg_split)>=0: 
@@ -121,6 +129,36 @@ def receive_input(connection, max_buffer_size):
                             with open("Result", "w") as f:
                                 f.writelines(lines)
                             update_History(vreg_split)
+                            
+                if(voter_choiceRecv==b'2'):
+                    if (RegExist(vreg_split)>=0):
+                        votedInfo = Time_Voted(vreg_split)
+                        print(votedInfo)
+                        connection.sendall(votedInfo.encode(encoding='utf_8', errors='strict'))
+                    else:
+                        connection.sendall("0".encode(encoding='utf_8', errors='strict'))
+                
+                if(voter_choiceRecv==b'3'):
+                    with open('HistoryFile') as f:
+                        for i, l in enumerate(f):
+                            pass
+                        i + 1
+                    totalVoted = i+1
+                    print(totalVoted)
+                    print(totalVoters)
+                    print(tim_votes)
+                    print(linda_votes)
+                    if(totalVoters==totalVoted):
+                        if(tim_votes>linda_votes):
+                            str = "Tim Wins:%d " % tim_votes
+                            connection.sendall(str.encode(encoding='utf_8', errors='strict'))
+                        else:
+                            str1 = "Linda Wins:%d " % linda_votes
+                            connection.sendall(str1.encode(encoding='utf_8', errors='strict'))
+                    else:
+                        connection.sendall("0".encode(encoding='utf_8', errors='strict'))
+                            
+                        
                     
     else:
         print("VnameDoesntExist")
@@ -189,6 +227,23 @@ def RegExist(vreg):
     return -1
     print("RegNum = {}"  .format(result))
     fr.close() 
+
+def Time_Voted(vreg):
+    fr = open('HistoryFile', 'r')
+    lines=fr.readlines()
+    result=[]
+    time=[]
+    for x in lines:
+        result.append(x.split()[0])
+        time.append(x.split()[1])
+    for xd, x in enumerate(result):
+        if x==vreg:
+            print(time[xd])
+            return time[xd]
+    return -1
+    print("RegNum = {}"  .format(result))
+    fr.close()
+
 
 def RegExist_inHistory(vreg):
     fr = open('HistoryFile', 'r')
